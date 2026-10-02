@@ -220,6 +220,7 @@ async function handlePostback(client, event) {
       return client.replyMessage({
         replyToken: event.replyToken,
         messages: [
+          { type: 'text', text: `${displayName} 已加入！` },
           joinMessage(game.id, /** @type {number} */ (game.maxPlayers), names),
         ],
       });
