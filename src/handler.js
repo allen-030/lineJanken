@@ -1,10 +1,9 @@
 import {
-  chooseHand,
   clearGame,
   createGame,
   getGameByGroup,
   getGameById,
-  joinGame,
+  playHand,
   resolveGame,
   setMaxPlayers,
 } from './game.js';
@@ -13,7 +12,6 @@ import {
   chooseProgressMessage,
   countSelectMessage,
   helpMessage,
-  joinMessage,
   resultMessages,
 } from './messages.js';
 
@@ -34,6 +32,7 @@ function parsePostback(data) {
 /**
  * @param {import('@line/bot-sdk').messagingApi.MessagingApiClient} client
  * @param {string} userId
+ * @param {string} groupId
  */
 async function getDisplayName(client, userId, groupId) {
   try {
@@ -200,40 +199,13 @@ async function handlePostback(client, event) {
     }
     return client.replyMessage({
       replyToken: event.replyToken,
-      messages: [joinMessage(game.id, count, [])],
-    });
-  }
-
-  if (action === 'join') {
-    const displayName = await getDisplayName(client, userId, groupId);
-    const result = joinGame(game, userId, displayName);
-    if (!result.ok) {
-      return client.replyMessage({
-        replyToken: event.replyToken,
-        messages: [{ type: 'text', text: result.reason }],
-      });
-    }
-
-    const names = [...game.players.values()].map((p) => p.displayName);
-
-    if (!result.ready) {
-      return client.replyMessage({
-        replyToken: event.replyToken,
-        messages: [
-          { type: 'text', text: `${displayName} 已加入！` },
-          joinMessage(game.id, /** @type {number} */ (game.maxPlayers), names),
-        ],
-      });
-    }
-
-    return client.replyMessage({
-      replyToken: event.replyToken,
-      messages: [chooseMessage(game.id, names)],
+      messages: [chooseMessage(game.id, count)],
     });
   }
 
   if (action === 'choose') {
-    const result = chooseHand(game, userId, params.hand);
+    const displayName = await getDisplayName(client, userId, groupId);
+    const result = playHand(game, userId, displayName, params.hand);
     if (!result.ok) {
       return client.replyMessage({
         replyToken: event.replyToken,
@@ -242,11 +214,17 @@ async function handlePostback(client, event) {
     }
 
     if (!result.allChosen) {
-      const chosen = [...game.players.values()].filter((p) => p.hand != null).length;
-      const total = game.players.size;
+      const names = [...game.players.values()].map((p) => p.displayName);
       return client.replyMessage({
         replyToken: event.replyToken,
-        messages: [chooseProgressMessage(chosen, total)],
+        messages: [
+          { type: 'text', text: '先出拳頭，剪刀、石頭、布' },
+          chooseProgressMessage(
+            result.chosenCount,
+            /** @type {number} */ (game.maxPlayers),
+            names,
+          ),
+        ],
       });
     }
 

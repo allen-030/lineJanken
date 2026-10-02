@@ -125,6 +125,27 @@ PORT=3000
 
 ---
 
+## 部署到 Render（免費，可不用 ngrok）
+
+程式已放在 GitHub：`https://github.com/allen-030/lineJanken`
+
+1. 開 [Render](https://dashboard.render.com/) → **New** → **Web Service**
+2. 連 GitHub，選 repo **lineJanken**
+3. 設定：
+   - Runtime: **Node**
+   - Build Command: `npm install`
+   - Start Command: `npm start`
+   - Plan: **Free**
+4. Environment Variables 新增：
+   - `CHANNEL_SECRET`
+   - `CHANNEL_ACCESS_TOKEN`
+5. Deploy 完成後，複製網址，例如 `https://xxxx.onrender.com`
+6. LINE Webhook 填：`https://xxxx.onrender.com/webhook` → Verify
+
+注意：免費方案閒置會睡，第一次回訊息可能慢幾秒。
+
+---
+
 ## 目前限制（簡單版）
 
 - 對局存在記憶體：伺服器重啟會清空進行中局  

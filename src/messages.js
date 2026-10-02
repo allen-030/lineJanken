@@ -1,5 +1,37 @@
 import { HAND_LABEL } from './game.js';
 
+function publicBaseUrl() {
+  return (process.env.BASE_URL || 'https://linejanken.onrender.com').replace(/\/$/, '');
+}
+
+/**
+ * @param {string} fileName
+ */
+function mediaUrl(fileName) {
+  return `${publicBaseUrl()}/media/${fileName}`;
+}
+
+/**
+ * 依勝負對應自訂動畫（目前有：剪刀打布）
+ * @param {ReturnType<import('./game.js').resolveGame>} result
+ */
+function resultAnimation(result) {
+  if (result.isDraw || !result.winningHand) {
+    return null;
+  }
+
+  const used = new Set(result.handsUsed);
+  if (result.winningHand === 'scissors' && used.has('paper')) {
+    return {
+      type: 'video',
+      originalContentUrl: mediaUrl('scissors-beats-paper.mp4'),
+      previewImageUrl: mediaUrl('scissors-beats-paper.jpg'),
+    };
+  }
+
+  return null;
+}
+
 /**
  * @param {string} gameId
  */
@@ -18,7 +50,6 @@ export function countSelectMessage(gameId) {
     });
   }
 
-  // Flex 一列最多不好塞滿 9 顆，改用兩欄排版
   /** @type {object[]} */
   const rows = [];
   for (let i = 0; i < buttons.length; i += 3) {
@@ -51,7 +82,7 @@ export function countSelectMessage(gameId) {
           },
           {
             type: 'text',
-            text: '先選這局要幾個人玩（2～10）',
+            text: '先選這局要幾個人玩（2～10），再直接出拳',
             size: 'sm',
             color: '#666666',
             wrap: true,
@@ -65,65 +96,16 @@ export function countSelectMessage(gameId) {
 }
 
 /**
- * @param {string} gameId
- * @param {number} maxPlayers
- * @param {string[]} joinedNames
- */
-export function joinMessage(gameId, maxPlayers, joinedNames) {
-  const list =
-    joinedNames.length === 0
-      ? '還沒有人加入'
-      : joinedNames.map((n, i) => `${i + 1}. ${n}`).join('\n');
-
-  return {
-    type: 'flex',
-    altText: `猜拳招募中（${joinedNames.length}/${maxPlayers}）`,
-    contents: {
-      type: 'bubble',
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: `招募中 ${joinedNames.length}/${maxPlayers}`,
-            weight: 'bold',
-            size: 'lg',
-          },
-          {
-            type: 'text',
-            text: list,
-            size: 'sm',
-            color: '#444444',
-            wrap: true,
-            margin: 'md',
-          },
-        ],
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            action: {
-              type: 'postback',
-              label: '加入猜拳',
-              data: `action=join&gameId=${gameId}`,
-            },
-          },
-        ],
-      },
-    },
-  };
-}
-
-/**
  * @param {number} chosen
  * @param {number} total
+ * @param {string[]} lockedNames
  */
-export function chooseProgressMessage(chosen, total) {
+export function chooseProgressMessage(chosen, total, lockedNames = []) {
+  const list =
+    lockedNames.length === 0
+      ? '還沒有人出拳'
+      : lockedNames.map((n, i) => `${i + 1}. ${n}`).join('\n');
+
   return {
     type: 'flex',
     altText: `出拳中 ${chosen}/${total}`,
@@ -139,6 +121,22 @@ export function chooseProgressMessage(chosen, total) {
             weight: 'bold',
             size: 'md',
           },
+          {
+            type: 'text',
+            text: list,
+            size: 'sm',
+            color: '#444444',
+            wrap: true,
+            margin: 'md',
+          },
+          {
+            type: 'text',
+            text: '拳種先保密，人齊後一起公布',
+            size: 'xs',
+            color: '#888888',
+            wrap: true,
+            margin: 'sm',
+          },
         ],
       },
     },
@@ -147,12 +145,12 @@ export function chooseProgressMessage(chosen, total) {
 
 /**
  * @param {string} gameId
- * @param {string[]} playerNames
+ * @param {number} maxPlayers
  */
-export function chooseMessage(gameId, playerNames) {
+export function chooseMessage(gameId, maxPlayers) {
   return {
     type: 'flex',
-    altText: '請出拳！剪刀石頭布',
+    altText: `請出拳！共 ${maxPlayers} 人`,
     contents: {
       type: 'bubble',
       body: {
@@ -161,13 +159,14 @@ export function chooseMessage(gameId, playerNames) {
         contents: [
           {
             type: 'text',
-            text: '請出拳',
+            text: '先出拳頭，剪刀、石頭、布',
             weight: 'bold',
             size: 'xl',
+            wrap: true,
           },
           {
             type: 'text',
-            text: `玩家：${playerNames.join('、')}`,
+            text: `這局 ${maxPlayers} 人。點選後先保密，人齊再一起公布。`,
             size: 'sm',
             color: '#666666',
             wrap: true,
@@ -175,7 +174,7 @@ export function chooseMessage(gameId, playerNames) {
           },
           {
             type: 'text',
-            text: '只有名單內的人可出拳，選了之後群組不會立刻看到你出什麼。',
+            text: '全員出完後，一次公布每人出什麼。',
             size: 'xs',
             color: '#888888',
             wrap: true,
@@ -227,8 +226,7 @@ export function chooseMessage(gameId, playerNames) {
  */
 export function resultMessages(game, result) {
   const lines = [...game.players.values()].map((p) => {
-    const hand = p.hand ? HAND_LABEL[p.hand] : '？';
-    return `${p.displayName}：${hand}`;
+    return `${p.displayName}：${HAND_LABEL[p.hand]}`;
   });
 
   let summary;
@@ -239,6 +237,11 @@ export function resultMessages(game, result) {
     const handLabel = result.winningHand ? HAND_LABEL[result.winningHand] : '';
     summary = `勝利：${winnerNames}（${handLabel}）`;
   }
+
+  const revealText = {
+    type: 'text',
+    text: ['一起開拳！', ...lines, '', summary].join('\n'),
+  };
 
   const flex = {
     type: 'flex',
@@ -287,12 +290,18 @@ export function resultMessages(game, result) {
     },
   };
 
-  // 官方免費貼圖：用 celebratory / fun size 增加熱鬧感（非專用猜拳貼圖）
-  const sticker = result.isDraw
-    ? { type: 'sticker', packageId: '11537', stickerId: '52002750' }
-    : { type: 'sticker', packageId: '11537', stickerId: '52002735' };
-
-  return [flex, sticker];
+  const animation = resultAnimation(result);
+  if (result.isDraw) {
+    return [revealText, flex];
+  }
+  if (animation) {
+    return [revealText, flex, animation];
+  }
+  return [
+    revealText,
+    flex,
+    { type: 'sticker', packageId: '11537', stickerId: '52002735' },
+  ];
 }
 
 export function helpMessage() {
@@ -302,9 +311,8 @@ export function helpMessage() {
       '【猜拳 Bot 用法】',
       '1. 在群組輸入：猜拳',
       '2. 選擇人數（2～10）',
-      '3. 大家點「加入猜拳」',
-      '4. 滿員後點石頭／布／剪刀',
-      '5. 全員出完自動公布結果',
+      '3. 大家直接點石頭／布／剪刀（拳種先保密）',
+      '4. 人齊後一次公布：誰出什麼',
       '',
       '其他指令：',
       '・結束猜拳／取消猜拳：取消目前這局',

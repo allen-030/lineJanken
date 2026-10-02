@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import express from 'express';
 import { middleware, messagingApi } from '@line/bot-sdk';
 import { handleEvent } from './handler.js';
@@ -6,6 +8,7 @@ import { handleEvent } from './handler.js';
 const channelSecret = process.env.CHANNEL_SECRET;
 const channelAccessToken = process.env.CHANNEL_ACCESS_TOKEN;
 const port = Number(process.env.PORT || 3000);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 if (!channelSecret || !channelAccessToken) {
   console.error(
@@ -19,6 +22,8 @@ const client = new messagingApi.MessagingApiClient({
 });
 
 const app = express();
+
+app.use('/media', express.static(path.join(__dirname, '..', 'public')));
 
 app.get('/', (_req, res) => {
   res.status(200).send('line-janken ok');

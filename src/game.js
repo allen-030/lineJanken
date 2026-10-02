@@ -1,12 +1,12 @@
 /** @typedef {'rock' | 'paper' | 'scissors'} Hand */
 
-/** @typedef {'waiting_count' | 'joining' | 'choosing' | 'done'} GamePhase */
+/** @typedef {'waiting_count' | 'choosing' | 'done'} GamePhase */
 
 /**
  * @typedef {object} Player
  * @property {string} userId
  * @property {string} displayName
- * @property {Hand | null} hand
+ * @property {Hand} hand
  */
 
 /**
@@ -105,58 +105,27 @@ export function clearGame(groupId) {
  */
 export function setMaxPlayers(game, count) {
   if (game.phase !== 'waiting_count') {
-    return { ok: false, reason: '這局已經開始選人數了，請先結束或重開。' };
+    return { ok: false, reason: '這局已經開始了，請先結束或重開。' };
   }
   if (!Number.isInteger(count) || count < 2 || count > 10) {
     return { ok: false, reason: '人數需為 2～10。' };
   }
   game.maxPlayers = count;
-  game.phase = 'joining';
+  game.phase = 'choosing';
   return { ok: true };
 }
 
 /**
+ * 出拳＝入場：點石頭／布／剪刀時加入並鎖定出拳，不先公布拳種。
  * @param {Game} game
  * @param {string} userId
  * @param {string} displayName
- * @returns {{ ok: true, ready: boolean } | { ok: false, reason: string }}
- */
-export function joinGame(game, userId, displayName) {
-  if (game.phase !== 'joining' || game.maxPlayers == null) {
-    return { ok: false, reason: '目前不是加入階段。' };
-  }
-  if (game.players.has(userId)) {
-    return { ok: false, reason: '你已經加入了。' };
-  }
-  if (game.players.size >= game.maxPlayers) {
-    return { ok: false, reason: '人數已滿。' };
-  }
-
-  game.players.set(userId, {
-    userId,
-    displayName,
-    hand: null,
-  });
-
-  const ready = game.players.size >= game.maxPlayers;
-  if (ready) {
-    game.phase = 'choosing';
-  }
-  return { ok: true, ready };
-}
-
-/**
- * @param {Game} game
- * @param {string} userId
  * @param {string} handRaw
- * @returns {{ ok: true, allChosen: boolean } | { ok: false, reason: string }}
+ * @returns {{ ok: true, allChosen: boolean, chosenCount: number } | { ok: false, reason: string }}
  */
-export function chooseHand(game, userId, handRaw) {
-  if (game.phase !== 'choosing') {
+export function playHand(game, userId, displayName, handRaw) {
+  if (game.phase !== 'choosing' || game.maxPlayers == null) {
     return { ok: false, reason: '目前不是出拳階段。' };
-  }
-  if (!game.players.has(userId)) {
-    return { ok: false, reason: '你不在這局玩家名單中。' };
   }
 
   if (!HANDS.includes(/** @type {Hand} */ (handRaw))) {
@@ -164,21 +133,27 @@ export function chooseHand(game, userId, handRaw) {
   }
 
   const hand = /** @type {Hand} */ (handRaw);
-  const player = game.players.get(userId);
-  if (!player) {
-    return { ok: false, reason: '找不到玩家。' };
-  }
-  if (player.hand != null) {
+
+  if (game.players.has(userId)) {
     return { ok: false, reason: '你已經出過拳了。' };
   }
+  if (game.players.size >= game.maxPlayers) {
+    return { ok: false, reason: '這局人數已滿。' };
+  }
 
-  player.hand = hand;
+  game.players.set(userId, {
+    userId,
+    displayName,
+    hand,
+  });
 
-  const allChosen = [...game.players.values()].every((p) => p.hand != null);
+  const chosenCount = game.players.size;
+  const allChosen = chosenCount >= game.maxPlayers;
   if (allChosen) {
     game.phase = 'done';
   }
-  return { ok: true, allChosen };
+
+  return { ok: true, allChosen, chosenCount };
 }
 
 /**
@@ -193,7 +168,7 @@ export function chooseHand(game, userId, handRaw) {
  */
 export function resolveGame(game) {
   const players = [...game.players.values()];
-  const handsUsed = [...new Set(players.map((p) => /** @type {Hand} */ (p.hand)))];
+  const handsUsed = [...new Set(players.map((p) => p.hand))];
 
   if (handsUsed.length !== 2) {
     return {
