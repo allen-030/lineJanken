@@ -24,6 +24,13 @@ app.get('/', (_req, res) => {
   res.status(200).send('line-janken ok');
 });
 
+// 瀏覽器用 GET 打開時的提示（LINE 實際打的是 POST）
+app.get('/webhook', (_req, res) => {
+  res
+    .status(200)
+    .send('line-janken webhook ready（請用 LINE Verify／實際訊息測試，需 POST）');
+});
+
 app.post(
   '/webhook',
   middleware({ channelSecret }),
