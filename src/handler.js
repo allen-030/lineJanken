@@ -218,7 +218,7 @@ async function handlePostback(client, event) {
       return client.replyMessage({
         replyToken: event.replyToken,
         messages: [
-          { type: 'text', text: '先出拳頭，剪刀、石頭、布' },
+          { type: 'text', text: '先出拳頭，剪刀、石頭' },
           chooseProgressMessage(
             result.chosenCount,
             /** @type {number} */ (game.maxPlayers),

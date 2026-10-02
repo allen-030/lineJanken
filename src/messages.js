@@ -159,7 +159,7 @@ export function chooseMessage(gameId, maxPlayers) {
         contents: [
           {
             type: 'text',
-            text: '先出拳頭，剪刀、石頭、布',
+            text: '先出拳頭，剪刀、石頭',
             weight: 'bold',
             size: 'xl',
             wrap: true,
@@ -238,11 +238,6 @@ export function resultMessages(game, result) {
     summary = `勝利：${winnerNames}（${handLabel}）`;
   }
 
-  const revealText = {
-    type: 'text',
-    text: ['一起開拳！', ...lines, '', summary].join('\n'),
-  };
-
   const flex = {
     type: 'flex',
     altText: summary,
@@ -292,13 +287,12 @@ export function resultMessages(game, result) {
 
   const animation = resultAnimation(result);
   if (result.isDraw) {
-    return [revealText, flex];
+    return [flex];
   }
   if (animation) {
-    return [revealText, flex, animation];
+    return [flex, animation];
   }
   return [
-    revealText,
     flex,
     { type: 'sticker', packageId: '11537', stickerId: '52002735' },
   ];
