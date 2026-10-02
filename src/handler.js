@@ -10,6 +10,7 @@ import {
 } from './game.js';
 import {
   chooseMessage,
+  chooseProgressMessage,
   countSelectMessage,
   helpMessage,
   joinMessage,
@@ -219,7 +220,6 @@ async function handlePostback(client, event) {
       return client.replyMessage({
         replyToken: event.replyToken,
         messages: [
-          { type: 'text', text: `${displayName} 已加入！` },
           joinMessage(game.id, /** @type {number} */ (game.maxPlayers), names),
         ],
       });
@@ -227,10 +227,7 @@ async function handlePostback(client, event) {
 
     return client.replyMessage({
       replyToken: event.replyToken,
-      messages: [
-        { type: 'text', text: `人數到齊（${names.join('、')}）！請出拳：` },
-        chooseMessage(game.id, names),
-      ],
+      messages: [chooseMessage(game.id, names)],
     });
   }
 
@@ -248,12 +245,7 @@ async function handlePostback(client, event) {
       const total = game.players.size;
       return client.replyMessage({
         replyToken: event.replyToken,
-        messages: [
-          {
-            type: 'text',
-            text: `已記錄你的出拳（保密）。目前 ${chosen}/${total} 人已出。`,
-          },
-        ],
+        messages: [chooseProgressMessage(chosen, total)],
       });
     }
 

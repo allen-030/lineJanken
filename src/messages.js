@@ -14,7 +14,6 @@ export function countSelectMessage(gameId) {
         type: 'postback',
         label: `${n} 人`,
         data: `action=set_count&gameId=${gameId}&count=${n}`,
-        displayText: `選 ${n} 人猜拳`,
       },
     });
   }
@@ -112,8 +111,33 @@ export function joinMessage(gameId, maxPlayers, joinedNames) {
               type: 'postback',
               label: '加入猜拳',
               data: `action=join&gameId=${gameId}`,
-              displayText: '我要加入猜拳',
             },
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * @param {number} chosen
+ * @param {number} total
+ */
+export function chooseProgressMessage(chosen, total) {
+  return {
+    type: 'flex',
+    altText: `出拳中 ${chosen}/${total}`,
+    contents: {
+      type: 'bubble',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: `出拳中 ${chosen}/${total}`,
+            weight: 'bold',
+            size: 'md',
           },
         ],
       },
@@ -171,7 +195,6 @@ export function chooseMessage(gameId, playerNames) {
               type: 'postback',
               label: '石頭 ✊',
               data: `action=choose&gameId=${gameId}&hand=rock`,
-              displayText: '已出拳（保密）',
             },
           },
           {
@@ -181,7 +204,6 @@ export function chooseMessage(gameId, playerNames) {
               type: 'postback',
               label: '布 ✋',
               data: `action=choose&gameId=${gameId}&hand=paper`,
-              displayText: '已出拳（保密）',
             },
           },
           {
@@ -191,7 +213,6 @@ export function chooseMessage(gameId, playerNames) {
               type: 'postback',
               label: '剪刀 ✌️',
               data: `action=choose&gameId=${gameId}&hand=scissors`,
-              displayText: '已出拳（保密）',
             },
           },
         ],
