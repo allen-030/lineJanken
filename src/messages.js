@@ -12,7 +12,7 @@ function mediaUrl(fileName) {
 }
 
 /**
- * 依勝負對應自訂動畫（目前有：剪刀打布）
+ * 剪刀贏布時用 MP4（點擊播放）
  * @param {ReturnType<import('./game.js').resolveGame>} result
  */
 function resultAnimation(result) {
@@ -33,18 +33,44 @@ function resultAnimation(result) {
 }
 
 /**
+ * GIF 測試用（官方規格為 JPEG/PNG；用 push 另發，失敗不影響結果）
+ * @param {ReturnType<import('./game.js').resolveGame>} result
+ */
+export function gifTestMessage(result) {
+  if (result.isDraw || !result.winningHand) {
+    return null;
+  }
+  const used = new Set(result.handsUsed);
+  if (result.winningHand === 'scissors' && used.has('paper')) {
+    return {
+      type: 'image',
+      originalContentUrl: mediaUrl('scissors-beats-paper.gif'),
+      previewImageUrl: mediaUrl('scissors-beats-paper.jpg'),
+    };
+  }
+  return null;
+}
+
+/**
+ * @param {ReturnType<import('./game.js').resolveGame>} result
+ */
+export function shouldTestGif(result) {
+  return gifTestMessage(result) != null;
+}
+
+/**
  * @param {string} gameId
  */
 export function countSelectMessage(gameId) {
   const buttons = [];
-  for (let n = 2; n <= 10; n += 1) {
+  for (let n = 1; n <= 10; n += 1) {
     buttons.push({
       type: 'button',
-      style: n === 2 ? 'primary' : 'secondary',
+      style: n === 1 ? 'primary' : 'secondary',
       height: 'sm',
       action: {
         type: 'postback',
-        label: `${n} 人`,
+        label: n === 1 ? '1人vsBot' : `${n} 人`,
         data: `action=set_count&gameId=${gameId}&count=${n}`,
       },
     });
@@ -67,7 +93,7 @@ export function countSelectMessage(gameId) {
 
   return {
     type: 'flex',
-    altText: '選擇猜拳人數（2～10）',
+    altText: '選擇猜拳人數（1～10）',
     contents: {
       type: 'bubble',
       body: {
@@ -82,7 +108,7 @@ export function countSelectMessage(gameId) {
           },
           {
             type: 'text',
-            text: '先選這局要幾個人玩（2～10），再直接出拳',
+            text: '1 人＝跟 Bot 對戰；2～10 人＝群組互猜',
             size: 'sm',
             color: '#666666',
             wrap: true,
@@ -148,9 +174,10 @@ export function chooseProgressMessage(chosen, total, lockedNames = []) {
  * @param {number} maxPlayers
  */
 export function chooseMessage(gameId, maxPlayers) {
+  const isVsBot = maxPlayers === 1;
   return {
     type: 'flex',
-    altText: `請出拳！共 ${maxPlayers} 人`,
+    altText: isVsBot ? '跟 Bot 猜拳，請出拳' : `請出拳！共 ${maxPlayers} 人`,
     contents: {
       type: 'bubble',
       body: {
@@ -159,14 +186,16 @@ export function chooseMessage(gameId, maxPlayers) {
         contents: [
           {
             type: 'text',
-            text: '先出拳頭，剪刀、石頭',
+            text: isVsBot ? '跟 Bot 對戰' : '先出拳頭，剪刀、石頭',
             weight: 'bold',
             size: 'xl',
             wrap: true,
           },
           {
             type: 'text',
-            text: `這局 ${maxPlayers} 人。點選後先保密，人齊再一起公布。`,
+            text: isVsBot
+              ? '選好拳種後，Bot 會立刻出拳並公布結果。'
+              : `這局 ${maxPlayers} 人。點選後先保密，人齊再一起公布。`,
             size: 'sm',
             color: '#666666',
             wrap: true,
@@ -174,7 +203,9 @@ export function chooseMessage(gameId, maxPlayers) {
           },
           {
             type: 'text',
-            text: '全員出完後，一次公布每人出什麼。',
+            text: isVsBot
+              ? '私訊或群組都可以測。'
+              : '全員出完後，一次公布每人出什麼。',
             size: 'xs',
             color: '#888888',
             wrap: true,
@@ -303,10 +334,10 @@ export function helpMessage() {
     type: 'text',
     text: [
       '【猜拳 Bot 用法】',
-      '1. 在群組輸入：猜拳',
-      '2. 選擇人數（2～10）',
-      '3. 大家直接點石頭／布／剪刀（拳種先保密）',
-      '4. 人齊後一次公布：誰出什麼',
+      '1. 群組或私訊輸入：猜拳',
+      '2. 選人數：1人vsBot，或 2～10 人互猜',
+      '3. 點石頭／布／剪刀（多人模式先保密）',
+      '4. 公布結果（剪刀贏布會測 GIF／MP4）',
       '',
       '其他指令：',
       '・結束猜拳／取消猜拳：取消目前這局',

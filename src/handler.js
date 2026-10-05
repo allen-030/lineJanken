@@ -1,4 +1,5 @@
 import {
+  addBotOpponent,
   clearGame,
   createGame,
   getGameByGroup,
@@ -11,8 +12,10 @@ import {
   chooseMessage,
   chooseProgressMessage,
   countSelectMessage,
+  gifTestMessage,
   helpMessage,
   resultMessages,
+  shouldTestGif,
 } from './messages.js';
 
 /**
@@ -30,14 +33,37 @@ function parsePostback(data) {
 }
 
 /**
+ * @param {import('@line/bot-sdk').webhook.Source} source
+ * @returns {string | null}
+ */
+function getRoomKey(source) {
+  if (source.type === 'group') return source.groupId;
+  if (source.type === 'room') return source.roomId;
+  if (source.type === 'user' && source.userId) return `user:${source.userId}`;
+  return null;
+}
+
+/**
+ * pushMessage 的 to：群組／房間用原 ID，私訊去掉 user: 前綴
+ * @param {string} roomKey
+ */
+function pushTargetFromRoomKey(roomKey) {
+  return roomKey.startsWith('user:') ? roomKey.slice('user:'.length) : roomKey;
+}
+
+/**
  * @param {import('@line/bot-sdk').messagingApi.MessagingApiClient} client
  * @param {string} userId
- * @param {string} groupId
+ * @param {string} roomKey
  */
-async function getDisplayName(client, userId, groupId) {
+async function getDisplayName(client, userId, roomKey) {
   try {
-    if (groupId) {
-      const profile = await client.getGroupMemberProfile(groupId, userId);
+    if (roomKey.startsWith('user:')) {
+      const profile = await client.getProfile(userId);
+      return profile.displayName || '玩家';
+    }
+    if (!roomKey.startsWith('user:')) {
+      const profile = await client.getGroupMemberProfile(roomKey, userId);
       return profile.displayName || '玩家';
     }
   } catch {
@@ -95,13 +121,7 @@ export async function handleEvent(client, event) {
  */
 async function handleText(client, event) {
   const text = event.message.text;
-  const source = event.source;
-  const groupId =
-    source.type === 'group'
-      ? source.groupId
-      : source.type === 'room'
-        ? source.roomId
-        : null;
+  const roomKey = getRoomKey(event.source);
 
   if (isHelpCommand(text)) {
     return client.replyMessage({
@@ -110,30 +130,19 @@ async function handleText(client, event) {
     });
   }
 
-  if (!groupId) {
-    if (isStartCommand(text)) {
-      return client.replyMessage({
-        replyToken: event.replyToken,
-        messages: [
-          {
-            type: 'text',
-            text: '請把我加進 LINE 群組後，在群裡輸入「猜拳」。',
-          },
-        ],
-      });
-    }
+  if (!roomKey) {
     return null;
   }
 
   if (isCancelCommand(text)) {
-    const existing = getGameByGroup(groupId);
+    const existing = getGameByGroup(roomKey);
     if (!existing || existing.phase === 'done') {
       return client.replyMessage({
         replyToken: event.replyToken,
         messages: [{ type: 'text', text: '目前沒有進行中的猜拳。' }],
       });
     }
-    clearGame(groupId);
+    clearGame(roomKey);
     return client.replyMessage({
       replyToken: event.replyToken,
       messages: [{ type: 'text', text: '已取消這局猜拳。' }],
@@ -144,20 +153,20 @@ async function handleText(client, event) {
     return null;
   }
 
-  const existing = getGameByGroup(groupId);
+  const existing = getGameByGroup(roomKey);
   if (existing && existing.phase !== 'done') {
     return client.replyMessage({
       replyToken: event.replyToken,
       messages: [
         {
           type: 'text',
-          text: '這個群已有一局進行中。要重開請先輸入「取消猜拳」。',
+          text: '已有一局進行中。要重開請先輸入「取消猜拳」。',
         },
       ],
     });
   }
 
-  const game = createGame(groupId);
+  const game = createGame(roomKey);
   return client.replyMessage({
     replyToken: event.replyToken,
     messages: [countSelectMessage(game.id)],
@@ -186,7 +195,7 @@ async function handlePostback(client, event) {
     });
   }
 
-  const groupId = game.groupId;
+  const roomKey = game.groupId;
 
   if (action === 'set_count') {
     const count = Number(params.count);
@@ -204,7 +213,7 @@ async function handlePostback(client, event) {
   }
 
   if (action === 'choose') {
-    const displayName = await getDisplayName(client, userId, groupId);
+    const displayName = await getDisplayName(client, userId, roomKey);
     const result = playHand(game, userId, displayName, params.hand);
     if (!result.ok) {
       return client.replyMessage({
@@ -228,13 +237,51 @@ async function handlePostback(client, event) {
       });
     }
 
+    if (game.maxPlayers === 1) {
+      addBotOpponent(game);
+    }
+
     const outcome = resolveGame(game);
     const messages = resultMessages(game, outcome);
-    clearGame(groupId);
-    return client.replyMessage({
+    clearGame(roomKey);
+
+    await client.replyMessage({
       replyToken: event.replyToken,
       messages,
     });
+
+    // GIF 測試：另用 push，失敗不影響主結果
+    if (shouldTestGif(outcome)) {
+      const gif = gifTestMessage(outcome);
+      if (gif) {
+        try {
+          await client.pushMessage({
+            to: pushTargetFromRoomKey(roomKey),
+            messages: [
+              { type: 'text', text: '【GIF 測試】若這則後面沒圖或失敗，代表 LINE 不吃 GIF。' },
+              gif,
+            ],
+          });
+        } catch (error) {
+          console.error('gif test push failed', error);
+          try {
+            await client.pushMessage({
+              to: pushTargetFromRoomKey(roomKey),
+              messages: [
+                {
+                  type: 'text',
+                  text: '【GIF 測試失敗】LINE 拒絕了 GIF 圖片訊息（多半只允許 JPEG/PNG）。',
+                },
+              ],
+            });
+          } catch (pushError) {
+            console.error('gif failure notice push failed', pushError);
+          }
+        }
+      }
+    }
+
+    return null;
   }
 
   return null;
