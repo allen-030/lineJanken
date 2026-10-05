@@ -12,10 +12,8 @@ import {
   chooseMessage,
   chooseProgressMessage,
   countSelectMessage,
-  gifTestMessage,
   helpMessage,
   resultMessages,
-  shouldTestGif,
 } from './messages.js';
 
 /**
@@ -41,14 +39,6 @@ function getRoomKey(source) {
   if (source.type === 'room') return source.roomId;
   if (source.type === 'user' && source.userId) return `user:${source.userId}`;
   return null;
-}
-
-/**
- * pushMessage 的 to：群組／房間用原 ID，私訊去掉 user: 前綴
- * @param {string} roomKey
- */
-function pushTargetFromRoomKey(roomKey) {
-  return roomKey.startsWith('user:') ? roomKey.slice('user:'.length) : roomKey;
 }
 
 /**
@@ -244,44 +234,10 @@ async function handlePostback(client, event) {
     const outcome = resolveGame(game);
     const messages = resultMessages(game, outcome);
     clearGame(roomKey);
-
-    await client.replyMessage({
+    return client.replyMessage({
       replyToken: event.replyToken,
       messages,
     });
-
-    // GIF 測試：另用 push，失敗不影響主結果
-    if (shouldTestGif(outcome)) {
-      const gif = gifTestMessage(outcome);
-      if (gif) {
-        try {
-          await client.pushMessage({
-            to: pushTargetFromRoomKey(roomKey),
-            messages: [
-              { type: 'text', text: '【GIF 測試】若這則後面沒圖或失敗，代表 LINE 不吃 GIF。' },
-              gif,
-            ],
-          });
-        } catch (error) {
-          console.error('gif test push failed', error);
-          try {
-            await client.pushMessage({
-              to: pushTargetFromRoomKey(roomKey),
-              messages: [
-                {
-                  type: 'text',
-                  text: '【GIF 測試失敗】LINE 拒絕了 GIF 圖片訊息（多半只允許 JPEG/PNG）。',
-                },
-              ],
-            });
-          } catch (pushError) {
-            console.error('gif failure notice push failed', pushError);
-          }
-        }
-      }
-    }
-
-    return null;
   }
 
   return null;

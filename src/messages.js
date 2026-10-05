@@ -33,32 +33,6 @@ function resultAnimation(result) {
 }
 
 /**
- * GIF 測試用（官方規格為 JPEG/PNG；用 push 另發，失敗不影響結果）
- * @param {ReturnType<import('./game.js').resolveGame>} result
- */
-export function gifTestMessage(result) {
-  if (result.isDraw || !result.winningHand) {
-    return null;
-  }
-  const used = new Set(result.handsUsed);
-  if (result.winningHand === 'scissors' && used.has('paper')) {
-    return {
-      type: 'image',
-      originalContentUrl: mediaUrl('scissors-beats-paper.gif'),
-      previewImageUrl: mediaUrl('scissors-beats-paper.jpg'),
-    };
-  }
-  return null;
-}
-
-/**
- * @param {ReturnType<import('./game.js').resolveGame>} result
- */
-export function shouldTestGif(result) {
-  return gifTestMessage(result) != null;
-}
-
-/**
  * @param {string} gameId
  */
 export function countSelectMessage(gameId) {
@@ -93,7 +67,7 @@ export function countSelectMessage(gameId) {
 
   return {
     type: 'flex',
-    altText: '選擇猜拳人數（1～10）',
+    altText: '選擇猜拳人數',
     contents: {
       type: 'bubble',
       body: {
@@ -105,14 +79,6 @@ export function countSelectMessage(gameId) {
             text: '猜拳',
             weight: 'bold',
             size: 'xl',
-          },
-          {
-            type: 'text',
-            text: '1 人＝跟 Bot 對戰；2～10 人＝群組互猜',
-            size: 'sm',
-            color: '#666666',
-            wrap: true,
-            margin: 'md',
           },
           ...rows,
         ],
@@ -335,9 +301,9 @@ export function helpMessage() {
     text: [
       '【猜拳 Bot 用法】',
       '1. 群組或私訊輸入：猜拳',
-      '2. 選人數：1人vsBot，或 2～10 人互猜',
-      '3. 點石頭／布／剪刀（多人模式先保密）',
-      '4. 公布結果（剪刀贏布會測 GIF／MP4）',
+      '2. 選人數：1人vsBot，或 2～10 人',
+      '3. 點石頭／布／剪刀',
+      '4. 公布結果（剪刀贏布發 MP4）',
       '',
       '其他指令：',
       '・結束猜拳／取消猜拳：取消目前這局',
