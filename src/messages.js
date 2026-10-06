@@ -1,4 +1,4 @@
-import { reverseOutcome } from './game.js';
+import { HAND_LABEL, reverseOutcome } from './game.js';
 
 function publicBaseUrl() {
   return (process.env.BASE_URL || 'https://linejanken.onrender.com').replace(/\/$/, '');
@@ -11,11 +11,24 @@ function mediaUrl(fileName) {
   return `${publicBaseUrl()}/media/${fileName}`;
 }
 
+const TWIST_CHANCE = 0.8;
+
 /**
- * 對應 mp4 資料夾：
- * 剪刀打布 / 布打石頭 / 石頭打剪刀
- * 石頭打剪刀 30% 會再播「石頭打剪刀2」（兩支）
+ * 對應 mp4 資料夾：三種勝負各有 1、2 兩支。
+ * 抽中反轉時先播 1、中場「嗯？」、再播 2，結果改對面贏。
  *
+ * @param {string} base
+ * @param {string} twist
+ * @returns {string[]}
+ */
+function maybeTwist(base, twist) {
+  if (Math.random() < TWIST_CHANCE) {
+    return [base, twist];
+  }
+  return [base];
+}
+
+/**
  * @param {import('./game.js').Hand} winningHand
  * @param {Set<import('./game.js').Hand>} used
  * @returns {string[]}
@@ -23,17 +36,17 @@ function mediaUrl(fileName) {
 function pickWinStems(winningHand, used) {
   switch (winningHand) {
     case 'scissors':
-      return used.has('paper') ? ['scissors-beats-paper'] : [];
+      return used.has('paper')
+        ? maybeTwist('scissors-beats-paper', 'scissors-beats-paper-2')
+        : [];
     case 'paper':
-      return used.has('rock') ? ['paper-beats-rock'] : [];
+      return used.has('rock')
+        ? maybeTwist('paper-beats-rock', 'paper-beats-rock-2')
+        : [];
     case 'rock':
-      if (!used.has('scissors')) {
-        return [];
-      }
-      if (Math.random() < 0.8) {
-        return ['rock-beats-scissors', 'rock-beats-scissors-2'];
-      }
-      return ['rock-beats-scissors'];
+      return used.has('scissors')
+        ? maybeTwist('rock-beats-scissors', 'rock-beats-scissors-2')
+        : [];
     default: {
       const _never = winningHand;
       void _never;
@@ -57,7 +70,10 @@ function videoMessage(stem) {
  * @param {ReturnType<import('./game.js').resolveGame>} result
  */
 function resultVideos(result) {
-  if (result.isDraw || !result.winningHand) {
+  if (result.isDraw) {
+    return [videoMessage('draw')];
+  }
+  if (!result.winningHand) {
     return [];
   }
   return pickWinStems(result.winningHand, new Set(result.handsUsed)).map(
@@ -259,7 +275,6 @@ export function resultMessages(game, result) {
   const videos = resultVideos(result);
   const shown = videos.length >= 2 ? reverseOutcome(game, result) : result;
 
-  const winnerNames = shown.winners.map((w) => w.displayName).join('\n');
   const summary = shown.isDraw
     ? '平手'
     : `勝者 ${shown.winners.map((w) => w.displayName).join('、')}`;
@@ -316,16 +331,30 @@ export function resultMessages(game, result) {
                 color: '#FF2D2D',
                 align: 'center',
               },
-              {
-                type: 'text',
-                text: winnerNames || '勝者',
-                weight: 'bold',
-                size: 'xxl',
-                color: '#FFD400',
-                align: 'center',
-                wrap: true,
-                margin: 'lg',
-              },
+              ...shown.winners.map((winner, index) => ({
+                type: 'box',
+                layout: 'vertical',
+                margin: index === 0 ? 'lg' : 'md',
+                contents: [
+                  {
+                    type: 'text',
+                    text: winner.displayName,
+                    weight: 'bold',
+                    size: 'xxl',
+                    color: '#FFD400',
+                    align: 'center',
+                    wrap: true,
+                  },
+                  {
+                    type: 'text',
+                    text: HAND_LABEL[winner.hand],
+                    size: 'sm',
+                    color: '#BBBBBB',
+                    align: 'center',
+                    margin: 'sm',
+                  },
+                ],
+              })),
             ],
           },
         },
