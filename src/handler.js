@@ -14,6 +14,7 @@ import {
   countSelectMessage,
   helpMessage,
   resultMessages,
+  twistMessage,
 } from './messages.js';
 
 /**
@@ -51,14 +52,23 @@ function pushTargetFromRoomKey(roomKey) {
 /**
  * @param {number} videoCount
  */
-function resultDelayMs(videoCount) {
-  if (videoCount >= 2) {
-    return 10000;
-  }
-  if (videoCount === 1) {
-    return 5000;
-  }
-  return 0;
+function later(ms, fn) {
+  setTimeout(() => {
+    Promise.resolve()
+      .then(fn)
+      .catch((error) => {
+        console.error('delayed send failed', error);
+      });
+  }, ms);
+}
+
+/**
+ * @param {import('@line/bot-sdk').messagingApi.MessagingApiClient} client
+ * @param {string} to
+ * @param {object[]} messages
+ */
+function pushLater(client, to, messages, ms) {
+  later(ms, () => client.pushMessage({ to, messages }));
 }
 
 /**
@@ -264,21 +274,19 @@ async function handlePostback(client, event) {
 
     await client.replyMessage({
       replyToken: event.replyToken,
-      messages: videos,
+      messages: [videos[0]],
     });
 
-    const waitMs = resultDelayMs(videos.length);
     const to = pushTargetFromRoomKey(roomKey);
-    setTimeout(() => {
-      client
-        .pushMessage({
-          to,
-          messages: [resultCard],
-        })
-        .catch((error) => {
-          console.error('delayed result push failed', error);
-        });
-    }, waitMs);
+
+    if (videos.length >= 2) {
+      pushLater(client, to, [twistMessage()], 2500);
+      pushLater(client, to, [videos[1]], 5000);
+      pushLater(client, to, [resultCard], 15000);
+      return null;
+    }
+
+    pushLater(client, to, [resultCard], 5000);
     return null;
   }
 

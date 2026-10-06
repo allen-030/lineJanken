@@ -220,4 +220,29 @@ export function resolveGame(game) {
   };
 }
 
+/**
+ * 劇情反轉：對面贏。
+ * @param {ReturnType<typeof resolveGame>} result
+ * @param {Game} game
+ */
+export function reverseOutcome(game, result) {
+  if (result.isDraw || !result.winningHand) {
+    return result;
+  }
+
+  const losingHand = result.handsUsed.find((h) => h !== result.winningHand);
+  if (!losingHand) {
+    return result;
+  }
+
+  const players = [...game.players.values()];
+  return {
+    winners: players.filter((p) => p.hand === losingHand),
+    losers: players.filter((p) => p.hand === result.winningHand),
+    isDraw: false,
+    winningHand: losingHand,
+    handsUsed: result.handsUsed,
+  };
+}
+
 export { HAND_LABEL, HANDS };

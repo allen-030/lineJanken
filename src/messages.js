@@ -1,4 +1,4 @@
-import { HAND_LABEL } from './game.js';
+import { HAND_LABEL, reverseOutcome } from './game.js';
 
 function publicBaseUrl() {
   return (process.env.BASE_URL || 'https://linejanken.onrender.com').replace(/\/$/, '');
@@ -256,16 +256,18 @@ export function chooseMessage(gameId, maxPlayers) {
  * @returns {{ videos: object[], result: object }}
  */
 export function resultMessages(game, result) {
+  const videos = resultVideos(result);
+  const shown = videos.length >= 2 ? reverseOutcome(game, result) : result;
   const lines = [...game.players.values()].map((p) => {
     return `${p.displayName}：${HAND_LABEL[p.hand]}`;
   });
 
   let summary;
-  if (result.isDraw) {
+  if (shown.isDraw) {
     summary = '結果：平手！大家再來一局吧。';
   } else {
-    const winnerNames = result.winners.map((w) => w.displayName).join('、');
-    const handLabel = result.winningHand ? HAND_LABEL[result.winningHand] : '';
+    const winnerNames = shown.winners.map((w) => w.displayName).join('、');
+    const handLabel = shown.winningHand ? HAND_LABEL[shown.winningHand] : '';
     summary = `勝利：${winnerNames}（${handLabel}）`;
   }
 
@@ -302,7 +304,7 @@ export function resultMessages(game, result) {
             size: 'md',
             wrap: true,
             margin: 'md',
-            color: result.isDraw ? '#888888' : '#1DB446',
+            color: shown.isDraw ? '#888888' : '#1DB446',
           },
           {
             type: 'text',
@@ -317,8 +319,15 @@ export function resultMessages(game, result) {
   };
 
   return {
-    videos: resultVideos(result),
+    videos,
     result: flex,
+  };
+}
+
+export function twistMessage() {
+  return {
+    type: 'text',
+    text: '嗯？',
   };
 }
 
