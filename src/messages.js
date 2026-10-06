@@ -1,4 +1,4 @@
-import { HAND_LABEL, reverseOutcome } from './game.js';
+import { reverseOutcome } from './game.js';
 
 function publicBaseUrl() {
   return (process.env.BASE_URL || 'https://linejanken.onrender.com').replace(/\/$/, '');
@@ -258,65 +258,90 @@ export function chooseMessage(gameId, maxPlayers) {
 export function resultMessages(game, result) {
   const videos = resultVideos(result);
   const shown = videos.length >= 2 ? reverseOutcome(game, result) : result;
-  const lines = [...game.players.values()].map((p) => {
-    return `${p.displayName}：${HAND_LABEL[p.hand]}`;
-  });
 
-  let summary;
-  if (shown.isDraw) {
-    summary = '結果：平手！大家再來一局吧。';
-  } else {
-    const winnerNames = shown.winners.map((w) => w.displayName).join('、');
-    const handLabel = shown.winningHand ? HAND_LABEL[shown.winningHand] : '';
-    summary = `勝利：${winnerNames}（${handLabel}）`;
-  }
+  const winnerNames = shown.winners.map((w) => w.displayName).join('\n');
+  const summary = shown.isDraw
+    ? '平手'
+    : `勝者 ${shown.winners.map((w) => w.displayName).join('、')}`;
 
-  const flex = {
-    type: 'flex',
-    altText: summary,
-    contents: {
-      type: 'bubble',
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '猜拳結果',
-            weight: 'bold',
-            size: 'xl',
+  const flex = shown.isDraw
+    ? {
+        type: 'flex',
+        altText: summary,
+        contents: {
+          type: 'bubble',
+          size: 'mega',
+          styles: {
+            body: {
+              backgroundColor: '#1A1A1A',
+            },
           },
-          {
-            type: 'text',
-            text: lines.join('\n'),
-            size: 'sm',
-            wrap: true,
-            margin: 'md',
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'xxl',
+            contents: [
+              {
+                type: 'text',
+                text: 'DRAW',
+                weight: 'bold',
+                size: 'sm',
+                color: '#888888',
+                align: 'center',
+                letterSpacing: '4px',
+              },
+              {
+                type: 'text',
+                text: '平手',
+                weight: 'bold',
+                size: '4xl',
+                color: '#E0E0E0',
+                align: 'center',
+                margin: 'lg',
+              },
+            ],
           },
-          {
-            type: 'separator',
-            margin: 'md',
+        },
+      }
+    : {
+        type: 'flex',
+        altText: summary,
+        contents: {
+          type: 'bubble',
+          size: 'mega',
+          styles: {
+            body: {
+              backgroundColor: '#140000',
+            },
           },
-          {
-            type: 'text',
-            text: summary,
-            weight: 'bold',
-            size: 'md',
-            wrap: true,
-            margin: 'md',
-            color: shown.isDraw ? '#888888' : '#1DB446',
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'xxl',
+            contents: [
+              {
+                type: 'text',
+                text: 'WINNER',
+                weight: 'bold',
+                size: 'sm',
+                color: '#FF2D2D',
+                align: 'center',
+                letterSpacing: '6px',
+              },
+              {
+                type: 'text',
+                text: winnerNames || '—',
+                weight: 'bold',
+                size: '3xl',
+                color: '#FFD400',
+                align: 'center',
+                wrap: true,
+                margin: 'lg',
+              },
+            ],
           },
-          {
-            type: 'text',
-            text: '輸入「猜拳」可再開一局',
-            size: 'xs',
-            color: '#aaaaaa',
-            margin: 'md',
-          },
-        ],
-      },
-    },
-  };
+        },
+      };
 
   return {
     videos,
