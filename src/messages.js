@@ -268,101 +268,137 @@ export function chooseMessage(gameId, maxPlayers) {
 
 /**
  * @param {import('./game.js').Game} game
+ * @param {ReturnType<import('./game.js').resolveGame>} shown
+ */
+function classicResultCard(game, shown) {
+  const lines = [...game.players.values()].map((p) => {
+    return `${p.displayName}：${HAND_LABEL[p.hand]}`;
+  });
+
+  let summary;
+  if (shown.isDraw) {
+    summary = '結果：平手！大家再來一局吧。';
+  } else {
+    const winnerNames = shown.winners.map((w) => w.displayName).join('、');
+    const handLabel = shown.winningHand ? HAND_LABEL[shown.winningHand] : '';
+    summary = `勝利：${winnerNames}（${handLabel}）`;
+  }
+
+  return {
+    type: 'flex',
+    altText: summary,
+    contents: {
+      type: 'bubble',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: '猜拳結果',
+            weight: 'bold',
+            size: 'xl',
+          },
+          {
+            type: 'text',
+            text: lines.join('\n'),
+            size: 'sm',
+            wrap: true,
+            margin: 'md',
+          },
+          {
+            type: 'separator',
+            margin: 'md',
+          },
+          {
+            type: 'text',
+            text: summary,
+            weight: 'bold',
+            size: 'md',
+            wrap: true,
+            margin: 'md',
+            color: shown.isDraw ? '#888888' : '#1DB446',
+          },
+          {
+            type: 'text',
+            text: '輸入「猜拳」可再開一局',
+            size: 'xs',
+            color: '#aaaaaa',
+            margin: 'md',
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * @param {ReturnType<import('./game.js').resolveGame>} shown
+ */
+function twistResultCard(shown) {
+  const summary = `勝者 ${shown.winners.map((w) => w.displayName).join('、')}`;
+  return {
+    type: 'flex',
+    altText: summary,
+    contents: {
+      type: 'bubble',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#140000',
+        paddingAll: '20px',
+        contents: [
+          {
+            type: 'text',
+            text: 'WINNER',
+            weight: 'bold',
+            size: 'sm',
+            color: '#FF2D2D',
+            align: 'center',
+          },
+          ...shown.winners.map((winner, index) => ({
+            type: 'box',
+            layout: 'vertical',
+            margin: index === 0 ? 'lg' : 'md',
+            contents: [
+              {
+                type: 'text',
+                text: winner.displayName,
+                weight: 'bold',
+                size: 'xxl',
+                color: '#FFD400',
+                align: 'center',
+                wrap: true,
+              },
+              {
+                type: 'text',
+                text: HAND_LABEL[winner.hand],
+                size: 'sm',
+                color: '#BBBBBB',
+                align: 'center',
+                margin: 'sm',
+              },
+            ],
+          })),
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * @param {import('./game.js').Game} game
  * @param {ReturnType<import('./game.js').resolveGame>} result
  * @returns {{ videos: object[], result: object }}
  */
 export function resultMessages(game, result) {
   const videos = resultVideos(result);
-  const shown = videos.length >= 2 ? reverseOutcome(game, result) : result;
-
-  const summary = shown.isDraw
-    ? '平手'
-    : `勝者 ${shown.winners.map((w) => w.displayName).join('、')}`;
-
-  const flex = shown.isDraw
-    ? {
-        type: 'flex',
-        altText: summary,
-        contents: {
-          type: 'bubble',
-          body: {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#1A1A1A',
-            paddingAll: '20px',
-            contents: [
-              {
-                type: 'text',
-                text: 'DRAW',
-                weight: 'bold',
-                size: 'sm',
-                color: '#888888',
-                align: 'center',
-              },
-              {
-                type: 'text',
-                text: '平手',
-                weight: 'bold',
-                size: 'xxl',
-                color: '#EEEEEE',
-                align: 'center',
-                margin: 'lg',
-              },
-            ],
-          },
-        },
-      }
-    : {
-        type: 'flex',
-        altText: summary,
-        contents: {
-          type: 'bubble',
-          body: {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#140000',
-            paddingAll: '20px',
-            contents: [
-              {
-                type: 'text',
-                text: 'WINNER',
-                weight: 'bold',
-                size: 'sm',
-                color: '#FF2D2D',
-                align: 'center',
-              },
-              ...shown.winners.map((winner, index) => ({
-                type: 'box',
-                layout: 'vertical',
-                margin: index === 0 ? 'lg' : 'md',
-                contents: [
-                  {
-                    type: 'text',
-                    text: winner.displayName,
-                    weight: 'bold',
-                    size: 'xxl',
-                    color: '#FFD400',
-                    align: 'center',
-                    wrap: true,
-                  },
-                  {
-                    type: 'text',
-                    text: HAND_LABEL[winner.hand],
-                    size: 'sm',
-                    color: '#BBBBBB',
-                    align: 'center',
-                    margin: 'sm',
-                  },
-                ],
-              })),
-            ],
-          },
-        },
-      };
+  const isTwist = videos.length >= 2;
+  const shown = isTwist ? reverseOutcome(game, result) : result;
 
   return {
     videos,
-    result: flex,
+    result: isTwist ? twistResultCard(shown) : classicResultCard(game, shown),
   };
 }
 
