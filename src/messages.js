@@ -30,7 +30,7 @@ function pickWinStems(winningHand, used) {
       if (!used.has('scissors')) {
         return [];
       }
-      if (Math.random() < 0.3) {
+      if (Math.random() < 0.8) {
         return ['rock-beats-scissors', 'rock-beats-scissors-2'];
       }
       return ['rock-beats-scissors'];
