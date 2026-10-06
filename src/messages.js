@@ -270,16 +270,11 @@ export function resultMessages(game, result) {
         altText: summary,
         contents: {
           type: 'bubble',
-          size: 'mega',
-          styles: {
-            body: {
-              backgroundColor: '#1A1A1A',
-            },
-          },
           body: {
             type: 'box',
             layout: 'vertical',
-            paddingAll: 'xxl',
+            backgroundColor: '#1A1A1A',
+            paddingAll: '20px',
             contents: [
               {
                 type: 'text',
@@ -288,14 +283,13 @@ export function resultMessages(game, result) {
                 size: 'sm',
                 color: '#888888',
                 align: 'center',
-                letterSpacing: '4px',
               },
               {
                 type: 'text',
                 text: '平手',
                 weight: 'bold',
-                size: '4xl',
-                color: '#E0E0E0',
+                size: 'xxl',
+                color: '#EEEEEE',
                 align: 'center',
                 margin: 'lg',
               },
@@ -308,16 +302,11 @@ export function resultMessages(game, result) {
         altText: summary,
         contents: {
           type: 'bubble',
-          size: 'mega',
-          styles: {
-            body: {
-              backgroundColor: '#140000',
-            },
-          },
           body: {
             type: 'box',
             layout: 'vertical',
-            paddingAll: 'xxl',
+            backgroundColor: '#140000',
+            paddingAll: '20px',
             contents: [
               {
                 type: 'text',
@@ -326,13 +315,12 @@ export function resultMessages(game, result) {
                 size: 'sm',
                 color: '#FF2D2D',
                 align: 'center',
-                letterSpacing: '6px',
               },
               {
                 type: 'text',
-                text: winnerNames || '—',
+                text: winnerNames || '勝者',
                 weight: 'bold',
-                size: '3xl',
+                size: 'xxl',
                 color: '#FFD400',
                 align: 'center',
                 wrap: true,
