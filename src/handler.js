@@ -42,6 +42,26 @@ function getRoomKey(source) {
 }
 
 /**
+ * @param {string} roomKey
+ */
+function pushTargetFromRoomKey(roomKey) {
+  return roomKey.startsWith('user:') ? roomKey.slice('user:'.length) : roomKey;
+}
+
+/**
+ * @param {number} videoCount
+ */
+function resultDelayMs(videoCount) {
+  if (videoCount >= 2) {
+    return 10000;
+  }
+  if (videoCount === 1) {
+    return 5000;
+  }
+  return 0;
+}
+
+/**
  * @param {import('@line/bot-sdk').messagingApi.MessagingApiClient} client
  * @param {string} userId
  * @param {string} roomKey
@@ -232,12 +252,34 @@ async function handlePostback(client, event) {
     }
 
     const outcome = resolveGame(game);
-    const messages = resultMessages(game, outcome);
+    const { videos, result: resultCard } = resultMessages(game, outcome);
     clearGame(roomKey);
-    return client.replyMessage({
+
+    if (videos.length === 0) {
+      return client.replyMessage({
+        replyToken: event.replyToken,
+        messages: [resultCard],
+      });
+    }
+
+    await client.replyMessage({
       replyToken: event.replyToken,
-      messages,
+      messages: videos,
     });
+
+    const waitMs = resultDelayMs(videos.length);
+    const to = pushTargetFromRoomKey(roomKey);
+    setTimeout(() => {
+      client
+        .pushMessage({
+          to,
+          messages: [resultCard],
+        })
+        .catch((error) => {
+          console.error('delayed result push failed', error);
+        });
+    }, waitMs);
+    return null;
   }
 
   return null;

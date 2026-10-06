@@ -24,6 +24,7 @@ const client = new messagingApi.MessagingApiClient({
 const app = express();
 
 app.use('/media', express.static(path.join(__dirname, '..', 'public')));
+app.use('/media', express.static(path.join(__dirname, '..', 'mp4')));
 
 app.get('/', (_req, res) => {
   res.status(200).send('line-janken ok');

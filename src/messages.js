@@ -12,24 +12,57 @@ function mediaUrl(fileName) {
 }
 
 /**
- * 剪刀贏布時用 MP4（點擊播放）
+ * 對應 mp4 資料夾：
+ * 剪刀打布 / 布打石頭 / 石頭打剪刀
+ * 石頭打剪刀 30% 會再播「石頭打剪刀2」（兩支）
+ *
+ * @param {import('./game.js').Hand} winningHand
+ * @param {Set<import('./game.js').Hand>} used
+ * @returns {string[]}
+ */
+function pickWinStems(winningHand, used) {
+  switch (winningHand) {
+    case 'scissors':
+      return used.has('paper') ? ['scissors-beats-paper'] : [];
+    case 'paper':
+      return used.has('rock') ? ['paper-beats-rock'] : [];
+    case 'rock':
+      if (!used.has('scissors')) {
+        return [];
+      }
+      if (Math.random() < 0.3) {
+        return ['rock-beats-scissors', 'rock-beats-scissors-2'];
+      }
+      return ['rock-beats-scissors'];
+    default: {
+      const _never = winningHand;
+      void _never;
+      return [];
+    }
+  }
+}
+
+/**
+ * @param {string} stem
+ */
+function videoMessage(stem) {
+  return {
+    type: 'video',
+    originalContentUrl: mediaUrl(`${stem}.mp4`),
+    previewImageUrl: mediaUrl(`${stem}.jpg`),
+  };
+}
+
+/**
  * @param {ReturnType<import('./game.js').resolveGame>} result
  */
-function resultAnimation(result) {
+function resultVideos(result) {
   if (result.isDraw || !result.winningHand) {
-    return null;
+    return [];
   }
-
-  const used = new Set(result.handsUsed);
-  if (result.winningHand === 'scissors' && used.has('paper')) {
-    return {
-      type: 'video',
-      originalContentUrl: mediaUrl('scissors-beats-paper.mp4'),
-      previewImageUrl: mediaUrl('scissors-beats-paper.jpg'),
-    };
-  }
-
-  return null;
+  return pickWinStems(result.winningHand, new Set(result.handsUsed)).map(
+    (stem) => videoMessage(stem),
+  );
 }
 
 /**
@@ -220,6 +253,7 @@ export function chooseMessage(gameId, maxPlayers) {
 /**
  * @param {import('./game.js').Game} game
  * @param {ReturnType<import('./game.js').resolveGame>} result
+ * @returns {{ videos: object[], result: object }}
  */
 export function resultMessages(game, result) {
   const lines = [...game.players.values()].map((p) => {
@@ -282,17 +316,10 @@ export function resultMessages(game, result) {
     },
   };
 
-  const animation = resultAnimation(result);
-  if (result.isDraw) {
-    return [flex];
-  }
-  if (animation) {
-    return [flex, animation];
-  }
-  return [
-    flex,
-    { type: 'sticker', packageId: '11537', stickerId: '52002735' },
-  ];
+  return {
+    videos: resultVideos(result),
+    result: flex,
+  };
 }
 
 export function helpMessage() {
@@ -303,7 +330,7 @@ export function helpMessage() {
       '1. 群組或私訊輸入：猜拳',
       '2. 選人數：1人vsBot，或 2～10 人',
       '3. 點石頭／布／剪刀',
-      '4. 公布結果（剪刀贏布發 MP4）',
+      '4. 先出獲勝影片，數秒後公布結果',
       '',
       '其他指令：',
       '・結束猜拳／取消猜拳：取消目前這局',
