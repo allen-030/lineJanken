@@ -67,11 +67,37 @@ function videoMessage(stem) {
 }
 
 /**
+ * 平手三支：全石頭／全布／全剪刀各一。三種拳都有時用第一支。
+ * @param {ReturnType<import('./game.js').resolveGame>} result
+ * @returns {string}
+ */
+function drawStem(result) {
+  if (result.handsUsed.length !== 1) {
+    return 'draw';
+  }
+
+  const hand = result.handsUsed[0];
+  switch (hand) {
+    case 'rock':
+      return 'draw';
+    case 'paper':
+      return 'draw-2';
+    case 'scissors':
+      return 'draw-3';
+    default: {
+      const _never = hand;
+      void _never;
+      return 'draw';
+    }
+  }
+}
+
+/**
  * @param {ReturnType<import('./game.js').resolveGame>} result
  */
 function resultVideos(result) {
   if (result.isDraw) {
-    return [videoMessage('draw')];
+    return [videoMessage(drawStem(result))];
   }
   if (!result.winningHand) {
     return [];

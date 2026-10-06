@@ -286,7 +286,7 @@ async function handlePostback(client, event) {
       pushLater(client, to, [pretwist], 2500);
       pushLater(client, to, [twistMessage()], 3500);
       pushLater(client, to, [videos[1]], 5000);
-      pushLater(client, to, [resultCard], 15000);
+      pushLater(client, to, [resultCard], 10000);
       return null;
     }
 
