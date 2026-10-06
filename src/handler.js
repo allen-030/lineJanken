@@ -13,6 +13,7 @@ import {
   chooseProgressMessage,
   countSelectMessage,
   helpMessage,
+  pretwistRevealMessage,
   resultMessages,
   twistMessage,
 } from './messages.js';
@@ -263,6 +264,8 @@ async function handlePostback(client, event) {
 
     const outcome = resolveGame(game);
     const { videos, result: resultCard } = resultMessages(game, outcome);
+    const pretwist =
+      videos.length >= 2 ? pretwistRevealMessage(game) : null;
     clearGame(roomKey);
 
     if (videos.length === 0) {
@@ -279,8 +282,9 @@ async function handlePostback(client, event) {
 
     const to = pushTargetFromRoomKey(roomKey);
 
-    if (videos.length >= 2) {
-      pushLater(client, to, [twistMessage()], 2500);
+    if (videos.length >= 2 && pretwist) {
+      pushLater(client, to, [pretwist], 2500);
+      pushLater(client, to, [twistMessage()], 3500);
       pushLater(client, to, [videos[1]], 5000);
       pushLater(client, to, [resultCard], 15000);
       return null;

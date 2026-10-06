@@ -345,7 +345,7 @@ function twistResultCard(shown) {
       body: {
         type: 'box',
         layout: 'vertical',
-        backgroundColor: '#140000',
+        backgroundColor: '#FFFFFF',
         paddingAll: '20px',
         contents: [
           {
@@ -366,7 +366,7 @@ function twistResultCard(shown) {
                 text: winner.displayName,
                 weight: 'bold',
                 size: 'xxl',
-                color: '#FFD400',
+                color: '#111111',
                 align: 'center',
                 wrap: true,
               },
@@ -374,7 +374,7 @@ function twistResultCard(shown) {
                 type: 'text',
                 text: HAND_LABEL[winner.hand],
                 size: 'sm',
-                color: '#BBBBBB',
+                color: '#888888',
                 align: 'center',
                 margin: 'sm',
               },
@@ -399,6 +399,16 @@ export function resultMessages(game, result) {
   return {
     videos,
     result: isTwist ? twistResultCard(shown) : classicResultCard(game, shown),
+  };
+}
+
+export function pretwistRevealMessage(game) {
+  const lines = [...game.players.values()].map(
+    (p) => `${p.displayName}出了${HAND_LABEL[p.hand]}`,
+  );
+  return {
+    type: 'text',
+    text: `${lines.join('\n')}\n勝者是...`,
   };
 }
 
