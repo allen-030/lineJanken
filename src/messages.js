@@ -216,6 +216,36 @@ export function chooseProgressMessage(chosen, total, lockedNames = []) {
  */
 export function chooseMessage(gameId, maxPlayers) {
   const isVsBot = maxPlayers === 1;
+  /** @type {object[]} */
+  const bodyContents = [
+    {
+      type: 'text',
+      text: isVsBot ? '跟 Bot 對戰' : '先出拳頭，剪刀、石頭',
+      weight: 'bold',
+      size: 'xl',
+      wrap: true,
+    },
+  ];
+  if (!isVsBot) {
+    bodyContents.push(
+      {
+        type: 'text',
+        text: `這局 ${maxPlayers} 人。點選後先保密，人齊再一起公布。`,
+        size: 'sm',
+        color: '#666666',
+        wrap: true,
+        margin: 'md',
+      },
+      {
+        type: 'text',
+        text: '全員出完後，一次公布每人出什麼。',
+        size: 'xs',
+        color: '#888888',
+        wrap: true,
+        margin: 'sm',
+      },
+    );
+  }
   return {
     type: 'flex',
     altText: isVsBot ? '跟 Bot 猜拳，請出拳' : `請出拳！共 ${maxPlayers} 人`,
@@ -224,35 +254,7 @@ export function chooseMessage(gameId, maxPlayers) {
       body: {
         type: 'box',
         layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: isVsBot ? '跟 Bot 對戰' : '先出拳頭，剪刀、石頭',
-            weight: 'bold',
-            size: 'xl',
-            wrap: true,
-          },
-          {
-            type: 'text',
-            text: isVsBot
-              ? '選好拳種後，Bot 會立刻出拳並公布結果。'
-              : `這局 ${maxPlayers} 人。點選後先保密，人齊再一起公布。`,
-            size: 'sm',
-            color: '#666666',
-            wrap: true,
-            margin: 'md',
-          },
-          {
-            type: 'text',
-            text: isVsBot
-              ? '私訊或群組都可以測。'
-              : '全員出完後，一次公布每人出什麼。',
-            size: 'xs',
-            color: '#888888',
-            wrap: true,
-            margin: 'sm',
-          },
-        ],
+        contents: bodyContents,
       },
       footer: {
         type: 'box',
@@ -440,19 +442,6 @@ function twistResultCard(shown) {
               },
             ],
           })),
-          {
-            type: 'separator',
-            margin: 'xl',
-            color: '#E10600',
-          },
-          {
-            type: 'text',
-            text: '結果翻轉　勝者出爐',
-            size: 'xs',
-            color: '#999999',
-            align: 'center',
-            margin: 'lg',
-          },
         ],
       },
     },
