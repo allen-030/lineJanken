@@ -368,24 +368,48 @@ function twistResultCard(shown) {
     altText: summary,
     contents: {
       type: 'bubble',
-      body: {
+      styles: {
+        header: {
+          backgroundColor: '#E10600',
+        },
+        body: {
+          backgroundColor: '#FFFFFF',
+        },
+      },
+      header: {
         type: 'box',
         layout: 'vertical',
-        backgroundColor: '#FFFFFF',
-        paddingAll: '20px',
+        backgroundColor: '#E10600',
+        paddingAll: '16px',
         contents: [
           {
             type: 'text',
             text: 'WINNER',
             weight: 'bold',
-            size: 'sm',
-            color: '#FF2D2D',
+            size: 'xl',
+            color: '#FFFFFF',
             align: 'center',
           },
+          {
+            type: 'text',
+            text: '翻　盤',
+            size: 'xs',
+            color: '#FFD0D0',
+            align: 'center',
+            margin: 'sm',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#FFFFFF',
+        paddingAll: '24px',
+        contents: [
           ...shown.winners.map((winner, index) => ({
             type: 'box',
             layout: 'vertical',
-            margin: index === 0 ? 'lg' : 'md',
+            margin: index === 0 ? 'none' : 'xl',
             contents: [
               {
                 type: 'text',
@@ -397,15 +421,38 @@ function twistResultCard(shown) {
                 wrap: true,
               },
               {
-                type: 'text',
-                text: HAND_LABEL[winner.hand],
-                size: 'sm',
-                color: '#888888',
-                align: 'center',
-                margin: 'sm',
+                type: 'box',
+                layout: 'vertical',
+                margin: 'lg',
+                backgroundColor: '#F4F4F4',
+                cornerRadius: '20px',
+                paddingAll: '10px',
+                contents: [
+                  {
+                    type: 'text',
+                    text: HAND_LABEL[winner.hand],
+                    size: 'md',
+                    color: '#333333',
+                    align: 'center',
+                    weight: 'bold',
+                  },
+                ],
               },
             ],
           })),
+          {
+            type: 'separator',
+            margin: 'xl',
+            color: '#E10600',
+          },
+          {
+            type: 'text',
+            text: '結果翻轉　勝者出爐',
+            size: 'xs',
+            color: '#999999',
+            align: 'center',
+            margin: 'lg',
+          },
         ],
       },
     },
