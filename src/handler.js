@@ -283,14 +283,14 @@ async function handlePostback(client, event) {
     const to = pushTargetFromRoomKey(roomKey);
 
     if (videos.length >= 2 && pretwist) {
-      pushLater(client, to, [pretwist], 2500);
-      pushLater(client, to, [twistMessage()], 3500);
+      pushLater(client, to, [pretwist], 3000);
+      pushLater(client, to, [twistMessage()], 4000);
       pushLater(client, to, [videos[1]], 5000);
-      pushLater(client, to, [resultCard], 10000);
+      pushLater(client, to, [resultCard], 8000);
       return null;
     }
 
-    pushLater(client, to, [resultCard], 5000);
+    pushLater(client, to, [resultCard], 3000);
     return null;
   }
 

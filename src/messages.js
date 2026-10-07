@@ -67,11 +67,14 @@ function videoMessage(stem) {
 }
 
 /**
- * 平手三支：全石頭／全布／全剪刀各一。三種拳都有時用第一支。
+ * 平手：全石頭／全布／全剪刀各一；三種拳都有用 draw-4。
  * @param {ReturnType<import('./game.js').resolveGame>} result
  * @returns {string}
  */
 function drawStem(result) {
+  if (result.handsUsed.length === 3) {
+    return 'draw-4';
+  }
   if (result.handsUsed.length !== 1) {
     return 'draw';
   }
